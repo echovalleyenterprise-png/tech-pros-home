@@ -3,11 +3,12 @@
 export const dynamic = "force-dynamic";
 
 import { Suspense, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/app/lib/supabase";
 
 function LoginForm() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "/home";
 
@@ -21,10 +22,16 @@ function LoginForm() {
     setError("");
     setLoading(true);
 
+    // Read from DOM directly to support programmatic form submission
+    const emailEl = document.getElementById("email") as HTMLInputElement;
+    const passwordEl = document.getElementById("password") as HTMLInputElement;
+    const emailValue = (emailEl?.value) || email;
+    const passwordValue = (passwordEl?.value) || password;
+
     const supabase = createClient();
     const { data, error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
+      email: emailValue,
+      password: passwordValue,
     });
 
     if (authError) {
@@ -33,9 +40,7 @@ function LoginForm() {
       return;
     }
 
-    // Use window.location.href for a full-page navigation so the browser sends
-    // the newly-set session cookie before the server middleware runs.
-    // router.push() is a client-side transition and cookies may not be flushed yet.
+    // Route based on role — do NOT call router.refresh() as it races with router.push()
     const role = data.user?.user_metadata?.role;
     if (role === "partner") {
       window.location.href = "/partner";
