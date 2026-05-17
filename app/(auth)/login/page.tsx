@@ -34,20 +34,18 @@ function LoginForm() {
       return;
     }
 
-    // Route based on role
+    // Route based on role — do NOT call router.refresh() here as it races with router.push()
     const role = data.user?.user_metadata?.role;
     if (role === "partner") {
       router.push("/partner");
     } else {
       router.push(next === "/partner" ? "/home" : next);
     }
-    router.refresh();
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Logo */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-block">
             <div className="flex items-center justify-center gap-2 mb-2">
@@ -62,17 +60,13 @@ function LoginForm() {
           </Link>
           <p className="text-slate-500 text-sm">Welcome back</p>
         </div>
-
-        {/* Card */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
           <h1 className="text-2xl font-bold text-slate-800 mb-6">Sign in</h1>
-
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
               {error}
             </div>
           )}
-
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1">
@@ -89,7 +83,6 @@ function LoginForm() {
                 placeholder="you@example.com"
               />
             </div>
-
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label htmlFor="password" className="block text-sm font-medium text-slate-700">
@@ -110,7 +103,6 @@ function LoginForm() {
                 placeholder="••••••••"
               />
             </div>
-
             <button
               type="submit"
               disabled={loading}
@@ -119,7 +111,6 @@ function LoginForm() {
               {loading ? "Signing in…" : "Sign in"}
             </button>
           </form>
-
           <p className="mt-6 text-center text-sm text-slate-500">
             Don&apos;t have an account?{" "}
             <Link href="/signup" className="text-blue-600 hover:text-blue-700 font-medium">
