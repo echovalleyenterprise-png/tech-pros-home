@@ -1,7 +1,22 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(request: NextRequest) {
+  let body: { email?: string; password?: string };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  }
+
+  const { email, password } = body;
+  if (!email || !password) {
+    return NextResponse.json({ error: "Missing email or password" }, { status: 400 });
+  }
+
+  // Collect cookies that createServerClient wants to set
   const cookiesToSet: { name: string; value: string; options: Record<string, unknown> }[] = [];
 
   const supabase = createServerClient(
@@ -21,12 +36,20 @@ export async function POST(request: NextRequest) {
     }
   );
 
-  await supabase.auth.signOut();
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
-  const response = NextResponse.redirect(new URL("/", baseUrl));
+  if (error) {
+    return NextResponse.json(
+      { error: error.message, code: error.code },
+      { status: 401 }
+    );
+  }
 
-  // Apply cookie deletions from signOut
+  const role = (data.user?.user_metadata?.role as string) ?? "homeowner";
+  const response = NextResponse.json({ ok: true, role });
+
+  // Write session cookies onto the response — these are in the exact format
+  // createServerClient expects to read them back from the next request.
   cookiesToSet.forEach(({ name, value, options }) => {
     response.cookies.set(
       name,
@@ -34,14 +57,6 @@ export async function POST(request: NextRequest) {
       options as Parameters<typeof response.cookies.set>[2]
     );
   });
-
-  // Also manually clear known auth cookies to be safe
-  const projectRef = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "")
-    .replace("https://", "")
-    .split(".")[0];
-  response.cookies.delete(`sb-${projectRef}-auth-token`);
-  response.cookies.delete(`sb-${projectRef}-auth-token.0`);
-  response.cookies.delete(`sb-${projectRef}-auth-token.1`);
 
   return response;
 }

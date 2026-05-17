@@ -5,7 +5,6 @@ export const dynamic = "force-dynamic";
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/app/lib/supabase";
 
 function LoginForm() {
   const searchParams = useSearchParams();
@@ -21,25 +20,34 @@ function LoginForm() {
     setError("");
     setLoading(true);
 
-    const supabase = createClient();
-    const { data, error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    // Use the server-side login route so cookies are set by createServerClient
+    // in the exact format that createServerClient can read back — no format mismatch.
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+        credentials: "same-origin",
+      });
 
-    if (authError) {
-      setError(authError.message);
+      const json = await res.json();
+
+      if (!res.ok) {
+        setError(json.error || "Sign in failed. Check your email and password.");
+        setLoading(false);
+        return;
+      }
+
+      // Hard redirect so the new server-set cookies are included in the next request
+      const role = json.role as string | undefined;
+      if (role === "partner") {
+        window.location.href = "/partner";
+      } else {
+        window.location.href = next === "/partner" ? "/home" : next;
+      }
+    } catch {
+      setError("Network error — please try again.");
       setLoading(false);
-      return;
-    }
-
-    // Use window.location.href (hard redirect) so cookies are fully committed
-    // before the next request hits the middleware — router.push() can race.
-    const role = data.user?.user_metadata?.role;
-    if (role === "partner") {
-      window.location.href = "/partner";
-    } else {
-      window.location.href = next === "/partner" ? "/home" : next;
     }
   }
 
