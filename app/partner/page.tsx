@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/app/lib/supabase";
 import { CopyButton, UpdateCallbackStatus } from "./PartnerClient";
