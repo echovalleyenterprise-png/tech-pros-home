@@ -26,7 +26,12 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
+  // Use getSession() for middleware — it reads the JWT from cookies locally
+  // without a network round-trip to the Supabase auth server, which is more
+  // reliable in Edge Runtime. The JWT is still signed by Supabase.
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
+
   const { pathname } = request.nextUrl;
 
   // Redirect unauthenticated users away from protected routes
@@ -41,7 +46,6 @@ export async function middleware(request: NextRequest) {
   // Redirect authenticated users away from auth pages
   const isAuthPage = AUTH_ONLY.some((p) => pathname.startsWith(p));
   if (isAuthPage && user) {
-    // Route to role-appropriate dashboard
     const url = request.nextUrl.clone();
     url.pathname = "/home";
     return NextResponse.redirect(url);
@@ -52,6 +56,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|.*\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
