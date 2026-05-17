@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 const PROTECTED = ["/home", "/chat", "/partner", "/callback"];
-const AUTH_ONLY = ["/login", "/signup", "/verify-email"];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -10,6 +9,7 @@ export function middleware(request: NextRequest) {
     (c) => c.name.startsWith("sb-") && c.name.endsWith("-auth-token")
   );
 
+  // Only guard protected routes — redirect to login if no cookie
   const isProtected = PROTECTED.some((p) => pathname.startsWith(p));
   if (isProtected && !hasCookie) {
     const url = request.nextUrl.clone();
@@ -18,12 +18,8 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  const isAuthPage = AUTH_ONLY.some((p) => pathname.startsWith(p));
-  if (isAuthPage && hasCookie) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/home";
-    return NextResponse.redirect(url);
-  }
+  // Auth pages (/login, /signup, /verify-email) are always accessible
+  // Server components handle session validation and post-login redirects
 
   return NextResponse.next();
 }
