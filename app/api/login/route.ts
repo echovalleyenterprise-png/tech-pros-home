@@ -24,8 +24,8 @@ export async function GET(request: NextRequest) {
         getAll() {
           return request.cookies.getAll();
         },
-        setAll(items) {
-          items.forEach((item) => cookiesToSet.push(item));
+        setAll(items: { name: string; value: string; options?: Record<string, unknown> }[]) {
+          items.forEach((item) => cookiesToSet.push(item as { name: string; value: string; options: Record<string, unknown> }));
         },
       },
     }
