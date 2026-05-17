@@ -29,13 +29,20 @@ export async function middleware(request: NextRequest) {
   const { data: { user }, error: getUserError } = await supabase.auth.getUser();
   const { pathname } = request.nextUrl;
 
-  // If getUser() fails with a network error from Edge Runtime, fall back to
-  // checking cookie presence so a transient Supabase connectivity issue
-  // doesn't lock out authenticated users.
+  // hasCookie: auth cookie is present (may be expired — we don't know without getUser())
   const hasCookie = request.cookies.getAll().some(
     (c) => c.name.startsWith("sb-") && c.name.endsWith("-auth-token")
   );
+
+  // isAuthenticated: used for PROTECTED routes.
+  // Allow through if getUser() confirmed a user, OR if getUser() hit a network
+  // error but a cookie exists (transient Edge→Supabase failure — let the page handle it).
   const isAuthenticated = user !== null || (getUserError !== null && hasCookie);
+
+  // isDefinitelyAuthenticated: used for AUTH_ONLY pages.
+  // Only redirect away from login/signup if we KNOW the user is valid —
+  // avoids an infinite loop when a cookie exists but the token is expired.
+  const isDefinitelyAuthenticated = user !== null;
 
   // Redirect unauthenticated users away from protected routes
   const isProtected = PROTECTED.some((p) => pathname.startsWith(p));
@@ -48,8 +55,7 @@ export async function middleware(request: NextRequest) {
 
   // Redirect authenticated users away from auth pages
   const isAuthPage = AUTH_ONLY.some((p) => pathname.startsWith(p));
-  if (isAuthPage && isAuthenticated) {
-    // Route to role-appropriate dashboard
+  if (isAuthPage && isDefinitelyAuthenticated) {
     const url = request.nextUrl.clone();
     url.pathname = "/home";
     return NextResponse.redirect(url);
