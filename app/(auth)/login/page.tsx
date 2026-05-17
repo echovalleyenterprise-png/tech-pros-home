@@ -3,12 +3,11 @@
 export const dynamic = "force-dynamic";
 
 import { Suspense, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/app/lib/supabase";
 
 function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "/home";
 
@@ -22,16 +21,10 @@ function LoginForm() {
     setError("");
     setLoading(true);
 
-    // Read from DOM directly to support programmatic form submission
-    const emailEl = document.getElementById("email") as HTMLInputElement;
-    const passwordEl = document.getElementById("password") as HTMLInputElement;
-    const emailValue = (emailEl?.value) || email;
-    const passwordValue = (passwordEl?.value) || password;
-
     const supabase = createClient();
     const { data, error: authError } = await supabase.auth.signInWithPassword({
-      email: emailValue,
-      password: passwordValue,
+      email,
+      password,
     });
 
     if (authError) {
@@ -40,7 +33,8 @@ function LoginForm() {
       return;
     }
 
-    // Route based on role — do NOT call router.refresh() as it races with router.push()
+    // Use window.location.href (hard redirect) so cookies are fully committed
+    // before the next request hits the middleware — router.push() can race.
     const role = data.user?.user_metadata?.role;
     if (role === "partner") {
       window.location.href = "/partner";
@@ -121,7 +115,7 @@ function LoginForm() {
               disabled={loading}
               className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold py-3 px-6 rounded-xl transition-colors duration-200"
             >
-              {loading ? "Signing in…" : "Sign in"}
+              {loading ? "Signing in\u2026" : "Sign in"}
             </button>
           </form>
 
