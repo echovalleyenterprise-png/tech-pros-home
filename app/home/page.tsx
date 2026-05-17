@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import Link from "next/link";
 import { createServerSupabaseClient } from "@/app/lib/supabase";
 import { QUESTION_LIMITS } from "@/app/lib/prompts";
@@ -9,7 +10,11 @@ export default async function HomePage() {
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) redirect("/login");
+  if (!user) {
+    // Sign out to clear any stale cookies, breaking any redirect loop
+    await supabase.auth.signOut();
+    redirect("/login");
+  }
 
   const { data: profile } = await supabase
     .from("profiles")
