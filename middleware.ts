@@ -46,9 +46,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Redirect authenticated users away from auth pages
+  // Redirect authenticated users away from auth pages.
+  // Use only `user !== null` here (not the hasCookie fallback) so a stale/expired
+  // cookie doesn't redirect /login → /home when getSession() will return null there,
+  // which would create an ERR_TOO_MANY_REDIRECTS loop.
   const isAuthPage = AUTH_ONLY.some((p) => pathname.startsWith(p));
-  if (isAuthPage && isAuthenticated) {
+  if (isAuthPage && user !== null) {
     // Route to role-appropriate dashboard
     const url = request.nextUrl.clone();
     url.pathname = "/home";
