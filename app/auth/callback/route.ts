@@ -18,7 +18,15 @@ export async function GET(request: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
-          getAll() { return request.cookies.getAll(); },
+          getAll() {
+            return request.cookies.getAll().map((c) => ({
+              name: c.name,
+              value: (() => {
+                try { return decodeURIComponent(c.value); }
+                catch { return c.value; }
+              })(),
+            }));
+          },
           setAll(items: { name: string; value: string; options?: Record<string, unknown> }[]) {
             items.forEach((item) =>
               cookiesToSet.push(item as { name: string; value: string; options: Record<string, unknown> })

@@ -25,7 +25,13 @@ export async function POST(request: NextRequest) {
     {
       cookies: {
         getAll() {
-          return request.cookies.getAll();
+          return request.cookies.getAll().map((c) => ({
+            name: c.name,
+            value: (() => {
+              try { return decodeURIComponent(c.value); }
+              catch { return c.value; }
+            })(),
+          }));
         },
         setAll(items: { name: string; value: string; options?: Record<string, unknown> }[]) {
           items.forEach((item) =>
