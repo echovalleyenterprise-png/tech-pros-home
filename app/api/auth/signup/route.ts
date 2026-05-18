@@ -1,3 +1,4 @@
+import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -7,9 +8,10 @@ export const dynamic = "force-dynamic";
  *
  * 1. Creates user via Supabase Admin REST API (email_confirm: true — no email needed)
  * 2. Creates profile row
- * 3. Signs in via REST token endpoint — returns access_token + refresh_token to client
- * 4. Client calls supabase.setSession() which writes cookies in the exact format
- *    @supabase/ssr's createServerClient (middleware + server pages) can read.
+ * 3. Signs in via REST token endpoint
+ * 4. Uses createServerClient.setSession() to write the auth cookie via Set-Cookie headers
+ *    — this is the exact format @supabase/ssr's middleware + server pages can read.
+ * 5. Returns { ok: true, role } — client just navigates, no client-side setSession needed.
  */
 export async function POST(request: NextRequest) {
   let body: {
@@ -82,9 +84,6 @@ export async function POST(request: NextRequest) {
   });
 
   // ── Step 3: Sign in via Supabase REST token endpoint ─────────────────────
-  // We call the REST endpoint directly so we get raw tokens back.
-  // The CLIENT then calls supabase.setSession({ access_token, refresh_token })
-  // which writes cookies in exactly the format @supabase/ssr's createServerClient reads.
   const tokenRes = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
     method: "POST",
     headers: {
@@ -95,12 +94,17 @@ export async function POST(request: NextRequest) {
   });
 
   if (!tokenRes.ok) {
+    // Account created but auto-sign-in failed — tell client to go to login
     return NextResponse.json({ ok: true, role, needsLogin: true });
   }
 
   const tokenData = (await tokenRes.json()) as {
     access_token: string;
     refresh_token: string;
+    expires_in?: number;
+    expires_at?: number;
+    token_type?: string;
+    user?: { id: string };
   };
 
   // ── Step 4: Handle referral tracking ─────────────────────────────────────
@@ -132,11 +136,35 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // Return tokens — client uses supabase.setSession() to write the auth cookie
-  return NextResponse.json({
-    ok: true,
-    role,
+  // ── Step 5: Write auth cookie via @supabase/ssr Set-Cookie headers ────────
+  const response = NextResponse.json({ ok: true, role });
+
+  const supabase = createServerClient(supabaseUrl, anonKey, {
+    cookies: {
+      getAll() {
+        return request.cookies.getAll();
+      },
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value, options }) =>
+          response.cookies.set(
+            name,
+            value,
+            options as Parameters<typeof response.cookies.set>[2]
+          )
+        );
+      },
+    },
+  });
+
+  const { error: sessionError } = await supabase.auth.setSession({
     access_token: tokenData.access_token,
     refresh_token: tokenData.refresh_token,
   });
+
+  if (sessionError) {
+    // Session write failed — tell client to go to login manually
+    return NextResponse.json({ ok: true, role, needsLogin: true });
+  }
+
+  return response;
 }

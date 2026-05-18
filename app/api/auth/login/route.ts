@@ -1,3 +1,4 @@
+import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -5,9 +6,10 @@ export const dynamic = "force-dynamic";
 /**
  * POST /api/auth/login
  *
- * Calls Supabase REST token endpoint directly and returns access_token + refresh_token.
- * The CLIENT calls supabase.setSession() which writes cookies in the exact format
- * @supabase/ssr's createServerClient (middleware + server pages) can read.
+ * 1. Calls Supabase REST token endpoint to authenticate
+ * 2. Uses createServerClient.setSession() to write the auth cookie via Set-Cookie headers
+ *    — this is the exact format @supabase/ssr's middleware + server pages can read.
+ * 3. Returns { ok: true, role } — client just navigates, no client-side setSession needed.
  */
 export async function POST(request: NextRequest) {
   let body: { email?: string; password?: string };
@@ -45,7 +47,10 @@ export async function POST(request: NextRequest) {
   const tokenData = (await tokenRes.json()) as {
     access_token: string;
     refresh_token: string;
-    user: { id: string; user_metadata?: { role?: string } };
+    expires_in?: number;
+    expires_at?: number;
+    token_type?: string;
+    user: { id: string; user_metadata?: { role?: string }; email?: string };
   };
 
   // Look up role from profiles table (source of truth)
@@ -61,11 +66,34 @@ export async function POST(request: NextRequest) {
     }
   } catch { /* fall back to user_metadata role */ }
 
-  // Return tokens — client calls supabase.setSession() to write the auth cookie
-  return NextResponse.json({
-    ok: true,
-    role,
+  // Build response — @supabase/ssr will write the auth cookie via Set-Cookie
+  const response = NextResponse.json({ ok: true, role });
+
+  const supabase = createServerClient(supabaseUrl, anonKey, {
+    cookies: {
+      getAll() {
+        return request.cookies.getAll();
+      },
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value, options }) =>
+          response.cookies.set(
+            name,
+            value,
+            options as Parameters<typeof response.cookies.set>[2]
+          )
+        );
+      },
+    },
+  });
+
+  const { error: sessionError } = await supabase.auth.setSession({
     access_token: tokenData.access_token,
     refresh_token: tokenData.refresh_token,
   });
+
+  if (sessionError) {
+    return NextResponse.json({ error: sessionError.message }, { status: 401 });
+  }
+
+  return response;
 }

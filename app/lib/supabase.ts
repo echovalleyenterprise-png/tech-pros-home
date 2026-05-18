@@ -18,17 +18,7 @@ export async function createServerSupabaseClient() {
     {
       cookies: {
         getAll() {
-          // Next.js returns cookie values as-is from the Cookie header.
-          // Browsers store values URL-encoded (Next.js URL-encodes when setting
-          // Set-Cookie), so we must decode before passing to @supabase/ssr,
-          // which calls JSON.parse() on the value directly.
-          return cookieStore.getAll().map((c) => ({
-            name: c.name,
-            value: (() => {
-              try { return decodeURIComponent(c.value); }
-              catch { return c.value; }
-            })(),
-          }));
+          return cookieStore.getAll();
         },
         setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
           try {
