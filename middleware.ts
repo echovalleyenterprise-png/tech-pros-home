@@ -49,6 +49,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Pass user ID to Server Components via request header so they don't need
+  // to call getUser() again (Edge → serverless cookie forwarding is unreliable)
+  if (user) {
+    supabaseResponse.headers.set("x-user-id", user.id);
+  }
+
   return supabaseResponse;
 }
 

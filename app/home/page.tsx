@@ -1,27 +1,27 @@
 export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
+import { headers } from "next/headers";
 import Link from "next/link";
 import { createServerSupabaseClient } from "@/app/lib/supabase";
 import { QUESTION_LIMITS } from "@/app/lib/prompts";
 
 export default async function HomePage() {
-  const supabase = await createServerSupabaseClient();
+  // Read user ID from header set by middleware — avoids re-verifying JWT in the
+  // serverless runtime (which can't reliably read the same cookies Edge verified).
+  const headersList = await headers();
+  const userId = headersList.get("x-user-id");
 
-  // Use getUser() to match what middleware uses — verifies the JWT server-side.
-  // getSession() was returning null even when valid cookies existed because chunked
-  // cookie reconstruction failed after the server-action sign-in fix.
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
+  if (!userId) {
     redirect("/login");
   }
+
+  const supabase = await createServerSupabaseClient();
 
   const { data: profile } = await supabase
     .from("profiles")
     .select("name, plan, questions_used, questions_reset_at")
-    .eq("id", user.id)
+    .eq("id", userId)
     .single();
 
   const plan = (profile?.plan ?? "free") as keyof typeof QUESTION_LIMITS;

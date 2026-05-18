@@ -1,19 +1,24 @@
 export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { createServerSupabaseClient } from "@/app/lib/supabase";
 import { CopyButton, UpdateCallbackStatus } from "./PartnerClient";
 
 export default async function PartnerPage() {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  // Read user ID from header set by middleware — avoids re-verifying JWT in the
+  // serverless runtime (which can't reliably read the same cookies Edge verified).
+  const headersList = await headers();
+  const userId = headersList.get("x-user-id");
 
-  if (!user) redirect("/login");
+  if (!userId) redirect("/login");
+
+  const supabase = await createServerSupabaseClient();
 
   const { data: profile } = await supabase
     .from("profiles")
     .select("name, role, affiliate_code")
-    .eq("id", user.id)
+    .eq("id", userId)
     .single();
 
   // Must be a partner
@@ -27,14 +32,14 @@ export default async function PartnerPage() {
   const { data: referrals } = await supabase
     .from("referrals")
     .select("id, affiliate_code, plan, is_paying, created_at")
-    .eq("partner_id", user.id)
+    .eq("partner_id", userId)
     .order("created_at", { ascending: false });
 
   // Load callback requests assigned to this partner
   const { data: callbacks } = await supabase
     .from("callback_requests")
     .select("id, issue_description, device_type, preferred_time, phone, status, created_at")
-    .eq("partner_id", user.id)
+    .eq("partner_id", userId)
     .order("created_at", { ascending: false });
 
   const totalReferrals = referrals?.length ?? 0;
