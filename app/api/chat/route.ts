@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
-import { createServerSupabaseClient, createAdminClient } from "@/app/lib/supabase";
+import { createAdminClient } from "@/app/lib/supabase";
 import { HOMEOWNER_SYSTEM_PROMPT, QUESTION_LIMITS } from "@/app/lib/prompts";
 import {
   retrieveRelevantChunks,
@@ -78,20 +78,23 @@ function extractTextFromContent(content: string | ContentBlock[]): string {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
+  // Auth: trust the x-user-id header injected by middleware (already verified).
+  // Do NOT re-verify with supabase.auth.getUser() — that fails when the access
+  // token has expired mid-session (middleware refreshes but can't write the new
+  // cookie back in the same response, so the API still sees the stale token).
+  const userId = req.headers.get("x-user-id");
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Use admin client for all Supabase operations (scoped by userId)
+  const admin = createAdminClient();
+
   // Load profile for plan + question count
-  const { data: profile } = await supabase
+  const { data: profile } = await admin
     .from("profiles")
     .select("plan, questions_used, questions_reset_at")
-    .eq("id", user.id)
+    .eq("id", userId)
     .single();
 
   const plan = (profile?.plan ?? "free") as keyof typeof QUESTION_LIMITS;
@@ -108,10 +111,10 @@ export async function POST(req: NextRequest) {
   let currentUsed = used;
   if (needsReset) {
     currentUsed = 0;
-    await supabase
+    await admin
       .from("profiles")
       .update({ questions_used: 0, questions_reset_at: new Date().toISOString() })
-      .eq("id", user.id);
+      .eq("id", userId);
   }
 
   if (limit !== Infinity && currentUsed >= limit) {
@@ -189,13 +192,12 @@ export async function POST(req: NextRequest) {
     searchContextString;
 
   // ── Conversation persistence ──────────────────────────────────────────────
-  const admin = createAdminClient();
   let convId = conversationId ?? null;
 
   if (!convId) {
     const { data: conv } = await admin
       .from("conversations")
-      .insert({ user_id: user.id, title: queryText.slice(0, 80) })
+      .insert({ user_id: userId, title: queryText.slice(0, 80) })
       .select("id")
       .single();
     convId = conv?.id ?? null;
@@ -204,17 +206,17 @@ export async function POST(req: NextRequest) {
   if (convId) {
     await admin.from("messages").insert({
       conversation_id: convId,
-      user_id: user.id,
+      user_id: userId,
       role: "user",
       content: queryText,
     });
   }
 
   // Increment usage (non-blocking)
-  supabase
+  admin
     .from("profiles")
     .update({ questions_used: currentUsed + 1 })
-    .eq("id", user.id)
+    .eq("id", userId)
     .then(() => {});
 
   // ── Stream response (SSE) ─────────────────────────────────────────────────
@@ -260,7 +262,7 @@ export async function POST(req: NextRequest) {
         if (convId && fullResponse) {
           await admin.from("messages").insert({
             conversation_id: convId,
-            user_id: user.id,
+            user_id: userId,
             role: "assistant",
             content: fullResponse,
           });

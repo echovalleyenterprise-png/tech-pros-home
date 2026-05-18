@@ -19,13 +19,13 @@ function ResetForm() {
     // @supabase/ssr handles session exchange via the auth callback route,
     // but for password reset we just need the session to exist.
     const supabase = createClient();
-    supabase.auth.onAuthStateChange((event) => {
+    supabase.auth.onAuthStateChange((event: string) => {
       if (event === "PASSWORD_RECOVERY") {
         setReady(true);
       }
     });
     // Also check if we have a session already (in case page reloaded)
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(({ data }: { data: { session: unknown } }) => {
       if (data.session) setReady(true);
     });
     // Check for error in URL hash

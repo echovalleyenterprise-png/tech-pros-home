@@ -35,8 +35,9 @@ export async function POST(request: NextRequest) {
 
   await supabase.auth.signOut();
 
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
-  const response = NextResponse.redirect(new URL("/", baseUrl));
+  // Use the request origin so this works on any deployment (Vercel, localhost, etc.)
+  const origin = request.nextUrl.origin;
+  const response = NextResponse.redirect(new URL("/", origin));
 
   // Apply cookie deletions from signOut
   cookiesToSet.forEach(({ name, value, options }) => {

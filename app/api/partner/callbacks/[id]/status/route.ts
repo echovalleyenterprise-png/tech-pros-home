@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/app/lib/supabase";
+import { createAdminClient } from "@/app/lib/supabase";
 
 export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // Trust the x-user-id header injected by middleware (already verified).
+  const userId = req.headers.get("x-user-id");
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { status } = await req.json();
   const allowed = ["scheduled", "completed", "cancelled"];
@@ -16,11 +15,13 @@ export async function POST(
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });
   }
 
-  const { error } = await supabase
+  const admin = createAdminClient();
+
+  const { error } = await admin
     .from("callback_requests")
     .update({ status, updated_at: new Date().toISOString() })
     .eq("id", params.id)
-    .eq("partner_id", user.id); // RLS: only the assigned partner can update
+    .eq("partner_id", userId); // only the assigned partner can update
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 

@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient, createAdminClient } from "@/app/lib/supabase";
+import { createAdminClient } from "@/app/lib/supabase";
 
 export async function POST(req: NextRequest) {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // Trust the x-user-id header injected by middleware (already verified).
+  const userId = req.headers.get("x-user-id");
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
   const { issue_description, device_type, preferred_time, phone } = body;
@@ -20,7 +19,7 @@ export async function POST(req: NextRequest) {
   const { data: profile } = await admin
     .from("profiles")
     .select("referred_by")
-    .eq("id", user.id)
+    .eq("id", userId)
     .single();
 
   let partnerId: string | null = null;
@@ -59,7 +58,7 @@ export async function POST(req: NextRequest) {
   }
 
   const { data, error } = await admin.from("callback_requests").insert({
-    user_id: user.id,
+    user_id: userId,
     partner_id: partnerId,
     issue_description: issue_description.trim(),
     device_type: device_type || null,

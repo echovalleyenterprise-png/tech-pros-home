@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient, createAdminClient } from "@/app/lib/supabase";
+import { createAdminClient } from "@/app/lib/supabase";
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
+    // Trust the x-user-id header injected by middleware (already verified).
+    const userId = req.headers.get("x-user-id");
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -38,7 +35,7 @@ export async function POST(req: NextRequest) {
     await admin.from("feedback").insert({
       message_id: msg?.id ?? null,
       conversation_id: conversationId,
-      user_id: user.id,
+      user_id: userId,
       rating,
       comment: comment ?? null,
     });
