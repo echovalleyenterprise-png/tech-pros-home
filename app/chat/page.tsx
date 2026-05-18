@@ -76,7 +76,27 @@ function SimpleMarkdown({ content }: { content: string }) {
       continue;
     }
 
-    // ## Heading
+    // --- Horizontal rule
+    if (line.trim() === "---" || line.trim() === "***" || line.trim() === "___") {
+      nodes.push(
+        <hr key={key++} className="border-slate-200 my-2" />
+      );
+      i++;
+      continue;
+    }
+
+    // # H1 Heading
+    if (line.startsWith("# ")) {
+      nodes.push(
+        <h2 key={key++} className="font-bold text-slate-900 text-base mt-3 mb-1">
+          {line.slice(2)}
+        </h2>
+      );
+      i++;
+      continue;
+    }
+
+    // ## H2 Heading
     if (line.startsWith("## ")) {
       nodes.push(
         <h3 key={key++} className="font-bold text-slate-800 text-sm mt-3 mb-1">
