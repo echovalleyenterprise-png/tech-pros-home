@@ -625,88 +625,156 @@ function Marketplace() {
 
 // ── For Installation Companies ─────────────────────────────────────────────────
 function ForCompanies() {
+  const plans = [
+    {
+      name: "Starter",
+      price: "$49",
+      period: "per month",
+      size: "Up to 5 techs",
+      desc: "Perfect for small shops and solo operators",
+      features: [
+        "AI field support for all techs",
+        "Marketplace listing (standard)",
+        "Customer callback tracking",
+        "Basic dashboard",
+      ],
+      cta: "Get started",
+      highlight: false,
+    },
+    {
+      name: "Growth",
+      price: "$149",
+      period: "per month",
+      size: "Up to 20 techs",
+      desc: "For growing companies ready to scale",
+      features: [
+        "Everything in Starter",
+        "Priority marketplace placement",
+        "Advanced analytics & reporting",
+        "Custom knowledge base (upload SOPs)",
+        "Customer satisfaction tracking",
+      ],
+      cta: "Get started",
+      highlight: true,
+      badge: "Most popular",
+    },
+    {
+      name: "Pro",
+      price: "$499",
+      period: "per month",
+      size: "Unlimited techs",
+      desc: "For large regional companies",
+      features: [
+        "Everything in Growth",
+        "Featured marketplace placement",
+        "White-label option (your branding)",
+        "Dedicated account manager",
+        "Early access to new features",
+      ],
+      cta: "Contact us",
+      highlight: false,
+    },
+  ];
+
   return (
     <section id="for-companies" className="py-20 px-5 bg-gray-50">
       <div className="max-w-5xl mx-auto">
-        <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-10 md:p-14 overflow-hidden relative">
-          {/* Background decoration */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/10 rounded-full -translate-y-1/3 translate-x-1/3" />
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-600/10 rounded-full translate-y-1/3 -translate-x-1/3" />
+        {/* Header */}
+        <div className="text-center mb-14">
+          <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 text-sm font-semibold px-4 py-1.5 rounded-full mb-6">
+            🏢 For Installation Companies
+          </div>
+          <h2 className="text-4xl font-bold text-gray-900 mb-4">
+            Reduce callbacks. Gain new customers.
+          </h2>
+          <p className="text-xl text-gray-500 max-w-2xl mx-auto">
+            Give your customers AI support after every install, get listed in our marketplace,
+            and let your techs focus on new jobs — not repeat visits.
+          </p>
+        </div>
 
-          <div className="relative grid md:grid-cols-2 gap-12 items-center">
-            <div>
-              <div className="inline-flex items-center gap-2 bg-blue-600/20 text-blue-400 text-sm font-semibold px-4 py-1.5 rounded-full mb-6">
-                🏢 For Installation Companies
+        {/* Value props row */}
+        <div className="grid sm:grid-cols-3 gap-5 mb-14">
+          {[
+            { icon: ICONS.phone, title: "Fewer callbacks", desc: "AI resolves ~80% of post-install questions instantly — no tech dispatch needed.", color: "bg-blue-100 text-blue-600" },
+            { icon: ICONS.map, title: "New customers", desc: "Get discovered by homeowners in your area through our marketplace listing.", color: "bg-emerald-100 text-emerald-600" },
+            { icon: ICONS.chart, title: "Full dashboard", desc: "Track customer activity, questions resolved, and callbacks avoided in real time.", color: "bg-purple-100 text-purple-600" },
+          ].map((f) => (
+            <div key={f.title} className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm text-center">
+              <div className={`w-12 h-12 rounded-xl ${f.color} flex items-center justify-center mx-auto mb-4`}>
+                <Icon path={f.icon} className="w-5 h-5" />
               </div>
-              <h2 className="text-4xl font-bold text-white leading-tight mb-5">
-                Reduce callbacks.<br />Gain new customers.
-              </h2>
-              <p className="text-gray-300 leading-relaxed mb-8">
-                Partner with Tech Pros Home to give your customers world-class AI support
-                after every install. Fewer callbacks means lower costs — and your company
-                gets discovered by new homeowners through our marketplace.
-              </p>
-              <div className="space-y-4 mb-8">
-                {[
-                  { icon: ICONS.phone, text: "AI handles post-install questions so your techs focus on new jobs" },
-                  { icon: ICONS.zap, text: "Customers get instant answers — no waiting, no frustrated callbacks" },
-                  { icon: ICONS.map, text: "Get listed in our marketplace and reach new homeowners in your area" },
-                  { icon: ICONS.chart, text: "Dashboard shows customer activity, questions, and satisfaction" },
-                  { icon: ICONS.shield, text: "White-label option available — your brand, our AI" },
-                ].map(({ icon, text }) => (
-                  <div key={text} className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-blue-600/20 flex-shrink-0 flex items-center justify-center">
-                      <Icon path={icon} className="w-4 h-4 text-blue-400" />
-                    </div>
-                    <span className="text-gray-300 text-sm leading-relaxed pt-1">{text}</span>
-                  </div>
+              <h3 className="font-bold text-gray-900 mb-2">{f.title}</h3>
+              <p className="text-gray-500 text-sm leading-relaxed">{f.desc}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Pricing tiers */}
+        <div className="grid md:grid-cols-3 gap-6 mb-10">
+          {plans.map((plan) => (
+            <div
+              key={plan.name}
+              className={`rounded-2xl p-7 ${
+                plan.highlight
+                  ? "bg-blue-600 text-white shadow-xl shadow-blue-200 scale-105"
+                  : "bg-white border border-gray-100 shadow-sm"
+              }`}
+            >
+              {plan.badge && (
+                <div className="inline-block bg-yellow-400 text-yellow-900 text-xs font-bold px-3 py-1 rounded-full mb-4">
+                  {plan.badge}
+                </div>
+              )}
+              <div className="mb-1">
+                <div className={`text-sm font-semibold mb-1 ${plan.highlight ? "text-blue-200" : "text-gray-500"}`}>
+                  {plan.name}
+                </div>
+                <div className="flex items-end gap-1">
+                  <span className="text-4xl font-extrabold">{plan.price}</span>
+                  <span className={`text-sm pb-1 ${plan.highlight ? "text-blue-200" : "text-gray-400"}`}>
+                    /{plan.period}
+                  </span>
+                </div>
+                <div className={`text-xs font-semibold mt-1 mb-1 ${plan.highlight ? "text-yellow-300" : "text-blue-600"}`}>
+                  {plan.size}
+                </div>
+                <p className={`text-sm mt-2 mb-5 ${plan.highlight ? "text-blue-200" : "text-gray-500"}`}>{plan.desc}</p>
+              </div>
+              <ul className="space-y-3 mb-8">
+                {plan.features.map((f) => (
+                  <li key={f} className="flex items-start gap-2.5 text-sm">
+                    <Icon
+                      path={ICONS.check}
+                      className={`w-4 h-4 flex-shrink-0 mt-0.5 ${plan.highlight ? "text-blue-200" : "text-green-500"}`}
+                    />
+                    <span className={plan.highlight ? "text-blue-100" : "text-gray-600"}>{f}</span>
+                  </li>
                 ))}
-              </div>
+              </ul>
               <a
                 href="mailto:partners@techpros.app"
-                className="inline-flex items-center gap-2 bg-blue-600 text-white font-bold px-7 py-3.5 rounded-xl hover:bg-blue-500 transition-colors shadow-lg shadow-blue-900/50"
+                className={`block text-center font-bold py-3 rounded-xl transition-all ${
+                  plan.highlight
+                    ? "bg-white text-blue-600 hover:bg-blue-50"
+                    : "bg-blue-600 text-white hover:bg-blue-700"
+                }`}
               >
-                Contact us about partnering
-                <Icon path={ICONS.arrow} className="w-4 h-4" />
+                {plan.cta}
               </a>
             </div>
+          ))}
+        </div>
 
-            {/* Value metrics */}
-            <div className="bg-gray-800/60 backdrop-blur rounded-2xl p-6 border border-gray-700">
-              <div className="text-gray-400 text-sm font-semibold mb-5 uppercase tracking-wide">
-                📉 The callback problem
-              </div>
-              <div className="space-y-4">
-                {[
-                  { label: "Avg. callbacks per 10 installs", value: "2–3", sub: "industry average" },
-                  { label: "Cost per callback visit", value: "$75–150", sub: "labor + travel", highlight: true },
-                  { label: "Questions AI resolves instantly", value: "~80%", sub: "no tech dispatch needed" },
-                ].map((row) => (
-                  <div
-                    key={row.label}
-                    className={`rounded-xl p-4 ${
-                      row.highlight ? "bg-blue-600 text-white" : "bg-gray-700/50"
-                    }`}
-                  >
-                    <div className={`text-xs mb-1 ${row.highlight ? "text-blue-200" : "text-gray-400"}`}>
-                      {row.label}
-                    </div>
-                    <div className="flex items-end justify-between">
-                      <span className={`text-2xl font-extrabold ${row.highlight ? "text-white" : "text-white"}`}>
-                        {row.value}
-                      </span>
-                      <span className={`text-xs ${row.highlight ? "text-blue-200" : "text-gray-500"}`}>
-                        {row.sub}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <p className="text-gray-500 text-xs mt-4 text-center">
-                Partner pricing starts at a flat monthly fee — no commissions, no per-question charges.
-              </p>
-            </div>
-          </div>
+        {/* ROI callout */}
+        <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-2xl p-8 text-center">
+          <p className="text-gray-400 text-sm mb-2 uppercase tracking-wide font-semibold">The math is simple</p>
+          <p className="text-white text-xl font-bold mb-2">
+            A company doing 30 installs/month saves <span className="text-yellow-400">$375–600/month</span> in avoided callbacks.
+          </p>
+          <p className="text-gray-400 text-sm">
+            At $49/month, Starter pays for itself the moment it prevents <strong className="text-white">one callback</strong>.
+          </p>
         </div>
       </div>
     </section>
