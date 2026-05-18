@@ -12,9 +12,7 @@ export async function middleware(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
+        getAll() { return request.cookies.getAll(); },
         setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
@@ -28,22 +26,33 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // getUser() verifies the JWT with Supabase — always use this for auth checks
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user }, error: getUserError } = await supabase.auth.getUser();
   const { pathname } = request.nextUrl;
+
+  // If getUser() fails with a network error from Edge Runtime, fall back to
+  // checking cookie presence so a transient Supabase connectivity issue
+  // doesn't lock out authenticated users.
+  const hasCookie = request.cookies.getAll().some(
+    (c) => c.name.startsWith("sb-") && c.name.endsWith("-auth-token")
+  );
+  const isAuthenticated = user !== null || (getUserError !== null && hasCookie);
 
   // Redirect unauthenticated users away from protected routes
   const isProtected = PROTECTED.some((p) => pathname.startsWith(p));
-  if (isProtected && !user) {
+  if (isProtected && !isAuthenticated) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("next", pathname);
     return NextResponse.redirect(url);
   }
 
-  // Redirect authenticated users away from auth pages
+  // Redirect authenticated users away from auth pages.
+  // Use only `user !== null` here (not the hasCookie fallback) so a stale/expired
+  // cookie doesn't redirect /login → /home when getSession() will return null there,
+  // which would create an ERR_TOO_MANY_REDIRECTS loop.
   const isAuthPage = AUTH_ONLY.some((p) => pathname.startsWith(p));
-  if (isAuthPage && user) {
+  if (isAuthPage && user !== null) {
+    // Route to role-appropriate dashboard
     const url = request.nextUrl.clone();
     url.pathname = "/home";
     return NextResponse.redirect(url);

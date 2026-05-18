@@ -28,6 +28,7 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
+      // Step 1: Create the user account (admin API — skips email verification)
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -42,14 +43,18 @@ export default function SignupPage() {
         return;
       }
 
-      // Write the session cookie using the browser client — this is the format
-      // that @supabase/ssr middleware can read reliably.
-      if (json.access_token && json.refresh_token) {
-        const supabase = createClient();
-        await supabase.auth.setSession({
-          access_token: json.access_token,
-          refresh_token: json.refresh_token,
-        });
+      // Step 2: Sign in via browser client — this writes cookies in the exact
+      // chunked format that @supabase/ssr middleware can read reliably.
+      const supabase = createClient();
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (signInError) {
+        // Account created but auto sign-in failed — send to login
+        window.location.href = "/login";
+        return;
       }
 
       const dest = json.role === "partner" ? "/partner" : "/home";

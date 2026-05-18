@@ -6,6 +6,8 @@ import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/app/lib/supabase";
+// Note: login now uses browser client signInWithPassword() directly, which writes
+// cookies in the exact format @supabase/ssr middleware can read.
 
 function LoginForm() {
   const searchParams = useSearchParams();
@@ -22,31 +24,26 @@ function LoginForm() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+      // Sign in via browser client — this writes cookies in the exact chunked
+      // format that @supabase/ssr middleware can read reliably.
+      const supabase = createClient();
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
 
-      const json = await res.json();
-
-      if (!res.ok) {
-        setError(json.error || "Sign in failed. Check your email and password.");
+      if (signInError || !data.session) {
+        setError(signInError?.message || "Sign in failed. Check your email and password.");
         setLoading(false);
         return;
       }
 
-      // Write the session cookie using the browser client — this is the format
-      // that @supabase/ssr middleware can read reliably.
-      if (json.access_token && json.refresh_token) {
-        const supabase = createClient();
-        await supabase.auth.setSession({
-          access_token: json.access_token,
-          refresh_token: json.refresh_token,
-        });
-      }
+      // Fetch role from profiles table
+      const userId = data.user.id;
+      const roleRes = await fetch(`/api/auth/get-role?userId=${userId}`);
+      const roleJson = await roleRes.json();
+      const role = roleJson.role as string | undefined;
 
-      const role = json.role as string | undefined;
       if (role === "partner") {
         window.location.href = "/partner";
       } else {
