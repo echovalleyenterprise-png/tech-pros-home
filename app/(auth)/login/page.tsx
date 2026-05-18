@@ -5,9 +5,9 @@ export const dynamic = "force-dynamic";
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/app/lib/supabase";
-// Note: login now uses browser client signInWithPassword() directly, which writes
-// cookies in the exact format @supabase/ssr middleware can read.
+import { signInAction } from "@/app/lib/actions";
+// Note: login uses a server action for signInWithPassword() so that cookies are
+// written by createServerClient on the server — the only format middleware can read.
 
 function LoginForm() {
   const searchParams = useSearchParams();
@@ -24,31 +24,15 @@ function LoginForm() {
     setLoading(true);
 
     try {
-      // Sign in via browser client — this writes cookies in the exact chunked
-      // format that @supabase/ssr middleware can read reliably.
-      const supabase = createClient();
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (signInError || !data.session) {
-        setError(signInError?.message || "Sign in failed. Check your email and password.");
+      // Server action signs in via createServerClient — writes cookies that middleware can read.
+      const result = await signInAction(email, password, next);
+      if ("error" in result) {
+        setError(result.error);
         setLoading(false);
         return;
       }
-
-      // Fetch role from profiles table
-      const userId = data.user.id;
-      const roleRes = await fetch(`/api/auth/get-role?userId=${userId}`);
-      const roleJson = await roleRes.json();
-      const role = roleJson.role as string | undefined;
-
-      if (role === "partner") {
-        window.location.href = "/partner";
-      } else {
-        window.location.href = next === "/partner" ? "/home" : next;
-      }
+      // Cookies are now set server-side. Navigate to destination.
+      window.location.href = result.dest;
     } catch {
       setError("Network error — please try again.");
       setLoading(false);

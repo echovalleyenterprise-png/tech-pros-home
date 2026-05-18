@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { createClient } from "@/app/lib/supabase";
+import { signUpAction } from "@/app/lib/actions";
 
 type Role = "homeowner" | "partner";
 
@@ -28,37 +28,16 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
-      // Step 1: Create the user account (admin API — skips email verification)
-      const res = await fetch("/api/auth/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, name, role, refCode }),
-      });
-
-      const json = await res.json();
-
-      if (!res.ok) {
-        setError(json.error || "Signup failed. Please try again.");
+      // Server action creates the account + signs in via createServerClient so
+      // cookies are written in the format middleware can read.
+      const result = await signUpAction(email, password, name, role, refCode);
+      if ("error" in result) {
+        setError(result.error);
         setLoading(false);
         return;
       }
-
-      // Step 2: Sign in via browser client — this writes cookies in the exact
-      // chunked format that @supabase/ssr middleware can read reliably.
-      const supabase = createClient();
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (signInError) {
-        // Account created but auto sign-in failed — send to login
-        window.location.href = "/login";
-        return;
-      }
-
-      const dest = json.role === "partner" ? "/partner" : "/home";
-      window.location.href = dest;
+      // Cookies are now set server-side. Navigate to destination.
+      window.location.href = result.dest;
     } catch {
       setError("Network error — please try again.");
       setLoading(false);
