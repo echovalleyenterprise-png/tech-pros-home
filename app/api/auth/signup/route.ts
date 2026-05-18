@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
   }
 
   const signedInRole = data.user.user_metadata?.role as string | undefined ?? role;
-  const response = NextResponse.json({ ok: true, role: signedInRole });
+  const response = NextResponse.json({ ok: true, role: signedInRole, _debug_cookieCount: cookiesToSet.length, _debug_cookieNames: cookiesToSet.map(c => c.name) });
 
   cookiesToSet.forEach(({ name, value, options }) => {
     response.cookies.set(name, value, options as Parameters<typeof response.cookies.set>[2]);
