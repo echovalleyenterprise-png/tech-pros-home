@@ -9,17 +9,14 @@ import { QUESTION_LIMITS } from "@/app/lib/prompts";
 export default async function HomePage() {
   const supabase = await createServerSupabaseClient();
 
-  // Use getSession() which parses the JWT from cookies without a network round-trip.
-  // The middleware already validated the token with getUser(), so this is safe here.
-  // getUser() was causing "Auth session missing!" errors even when valid cookies exist,
-  // creating a redirect loop that the middleware's cookie-fallback couldn't break.
-  const { data: { session } } = await supabase.auth.getSession();
+  // Use getUser() to match what middleware uses — verifies the JWT server-side.
+  // getSession() was returning null even when valid cookies existed because chunked
+  // cookie reconstruction failed after the server-action sign-in fix.
+  const { data: { user } } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (!user) {
     redirect("/login");
   }
-
-  const user = session.user;
 
   const { data: profile } = await supabase
     .from("profiles")
