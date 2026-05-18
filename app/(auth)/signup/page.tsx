@@ -1,14 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/app/lib/supabase";
 
 type Role = "homeowner" | "partner";
 
 export default function SignupPage() {
-  const router = useRouter();
   const [step, setStep] = useState<1 | 2>(1);
   const [role, setRole] = useState<Role>("homeowner");
   const [name, setName] = useState("");
@@ -29,27 +26,28 @@ export default function SignupPage() {
     setError("");
     setLoading(true);
 
-    const supabase = createClient();
-    const { error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          name,
-          role,
-          referred_by: refCode ?? null,
-        },
-        emailRedirectTo: `${location.origin}/auth/callback`,
-      },
-    });
+    try {
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, name, role, refCode }),
+      });
 
-    if (signUpError) {
-      setError(signUpError.message);
+      const json = await res.json();
+
+      if (!res.ok) {
+        setError(json.error || "Signup failed. Please try again.");
+        setLoading(false);
+        return;
+      }
+
+      // Server signed us in and set cookies — hard redirect to get fresh request
+      const dest = json.role === "partner" ? "/partner" : "/home";
+      window.location.href = dest;
+    } catch {
+      setError("Network error — please try again.");
       setLoading(false);
-      return;
     }
-
-    router.push("/verify-email");
   }
 
   return (
