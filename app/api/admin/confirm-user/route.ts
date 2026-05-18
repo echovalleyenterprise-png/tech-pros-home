@@ -1,9 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createAdminClient } from "@/app/lib/supabase";
 
 export const dynamic = "force-dynamic";
 
-// TEMP ADMIN ROUTE — confirm a user's email via service role key
+// TEMP ADMIN ROUTE — confirm a user's email via Supabase REST API
 // Usage: GET /api/admin/confirm-user?email=user@example.com
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -13,32 +12,61 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Missing email param" }, { status: 400 });
   }
 
-  const admin = createAdminClient();
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_KEY;
 
-  // List users and find by email
-  const { data: listData, error: listError } = await admin.auth.admin.listUsers();
-  if (listError) {
-    return NextResponse.json({ error: listError.message }, { status: 500 });
+  if (!supabaseUrl || !serviceKey) {
+    return NextResponse.json({ error: "Missing env vars" }, { status: 500 });
   }
 
-  const user = listData.users.find((u) => u.email === email);
+  // List users via Supabase Auth Admin REST API
+  const listRes = await fetch(`${supabaseUrl}/auth/v1/admin/users?per_page=1000`, {
+    headers: {
+      apikey: serviceKey,
+      Authorization: `Bearer ${serviceKey}`,
+    },
+  });
+
+  if (!listRes.ok) {
+    const err = await listRes.text();
+    return NextResponse.json({ error: `listUsers failed: ${err}` }, { status: 500 });
+  }
+
+  const listData = (await listRes.json()) as {
+    users: Array<{ id: string; email: string }>;
+  };
+
+  const user = listData.users.find((u) => u.email === email) ?? null;
   if (!user) {
     return NextResponse.json({ error: `User not found: ${email}` }, { status: 404 });
   }
 
-  // Confirm the email
-  const { data, error } = await admin.auth.admin.updateUser(user.id, {
-    email_confirm: true,
+  // Confirm the email via PUT
+  const updateRes = await fetch(`${supabaseUrl}/auth/v1/admin/users/${user.id}`, {
+    method: "PUT",
+    headers: {
+      apikey: serviceKey,
+      Authorization: `Bearer ${serviceKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ email_confirm: true }),
   });
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!updateRes.ok) {
+    const err = await updateRes.text();
+    return NextResponse.json({ error: `updateUser failed: ${err}` }, { status: 500 });
   }
+
+  const updated = (await updateRes.json()) as {
+    id: string;
+    email: string;
+    email_confirmed_at: string | null;
+  };
 
   return NextResponse.json({
     ok: true,
-    userId: data.user.id,
-    email: data.user.email,
-    confirmed: data.user.email_confirmed_at,
+    userId: updated.id,
+    email: updated.email,
+    confirmed: updated.email_confirmed_at,
   });
 }
