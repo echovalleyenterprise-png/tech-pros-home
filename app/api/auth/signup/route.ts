@@ -1,14 +1,15 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createServerClient } from "@supabase/ssr";
 
 export const dynamic = "force-dynamic";
 
 /**
  * POST /api/auth/signup
  *
- * Creates the user via Supabase Admin REST API (email_confirm: true — no
- * verification email needed), then signs them in server-side so the session
- * cookies are in the format createServerClient can read on the next request.
+ * 1. Creates user via Supabase Admin REST API (email_confirm: true — no email needed)
+ * 2. Creates profile row
+ * 3. Signs in via REST token endpoint — returns access_token + refresh_token to client
+ * 4. Client calls supabase.setSession() which writes cookies in the exact format
+ *    @supabase/ssr's createServerClient (middleware + server pages) can read.
  */
 export async function POST(request: NextRequest) {
   let body: {
@@ -38,7 +39,6 @@ export async function POST(request: NextRequest) {
   }
 
   // ── Step 1: Create user via Admin REST API ────────────────────────────────
-  // Using email_confirm: true skips the verification email entirely.
   const createRes = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
     method: "POST",
     headers: {
@@ -50,25 +50,19 @@ export async function POST(request: NextRequest) {
       email,
       password,
       email_confirm: true,
-      user_metadata: {
-        name,
-        role,
-        referred_by: refCode ?? null,
-      },
+      user_metadata: { name, role, referred_by: refCode ?? null },
     }),
   });
 
   if (!createRes.ok) {
     const err = await createRes.json().catch(() => ({})) as { msg?: string; message?: string };
     const msg = err.msg ?? err.message ?? "Signup failed";
-    // "User already registered" → 422
     return NextResponse.json({ error: msg }, { status: createRes.status });
   }
 
-  // ── Step 2: Create profile row ────────────────────────────────────────────
   const newUser = (await createRes.json()) as { id: string };
 
-  // Insert profile using service role (bypasses RLS)
+  // ── Step 2: Create profile row ────────────────────────────────────────────
   await fetch(`${supabaseUrl}/rest/v1/profiles`, {
     method: "POST",
     headers: {
@@ -87,49 +81,33 @@ export async function POST(request: NextRequest) {
     }),
   });
 
-  // ── Step 3: Sign in server-side to get proper SSR cookies ─────────────────
-  const cookiesToSet: { name: string; value: string; options: Record<string, unknown> }[] = [];
-
-  const supabase = createServerClient(supabaseUrl, anonKey, {
-    cookies: {
-      getAll() {
-      return request.cookies.getAll().map((c) => ({
-        name: c.name,
-        value: (() => {
-          try { return decodeURIComponent(c.value); }
-          catch { return c.value; }
-        })(),
-      }));
+  // ── Step 3: Sign in via Supabase REST token endpoint ─────────────────────
+  // We call the REST endpoint directly so we get raw tokens back.
+  // The CLIENT then calls supabase.setSession({ access_token, refresh_token })
+  // which writes cookies in exactly the format @supabase/ssr's createServerClient reads.
+  const tokenRes = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
+    method: "POST",
+    headers: {
+      apikey: anonKey,
+      "Content-Type": "application/json",
     },
-      setAll(items: { name: string; value: string; options?: Record<string, unknown> }[]) {
-        items.forEach((item) =>
-          cookiesToSet.push(item as { name: string; value: string; options: Record<string, unknown> })
-        );
-      },
-    },
+    body: JSON.stringify({ email, password }),
   });
 
-  const { data, error: signInError } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
-
-  if (signInError || !data.user) {
-    // User created but couldn't sign in — send them to login
+  if (!tokenRes.ok) {
     return NextResponse.json({ ok: true, role, needsLogin: true });
   }
 
+  const tokenData = (await tokenRes.json()) as {
+    access_token: string;
+    refresh_token: string;
+  };
+
   // ── Step 4: Handle referral tracking ─────────────────────────────────────
   if (refCode) {
-    // Find partner by affiliate_code and insert referral row
     const partnerRes = await fetch(
       `${supabaseUrl}/rest/v1/profiles?affiliate_code=eq.${encodeURIComponent(refCode)}&select=id&limit=1`,
-      {
-        headers: {
-          apikey: serviceKey,
-          Authorization: `Bearer ${serviceKey}`,
-        },
-      }
+      { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } }
     );
     if (partnerRes.ok) {
       const partners = (await partnerRes.json()) as Array<{ id: string }>;
@@ -154,12 +132,11 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const signedInRole = data.user.user_metadata?.role as string | undefined ?? role;
-  const response = NextResponse.json({ ok: true, role: signedInRole, _debug_cookieCount: cookiesToSet.length, _debug_cookieNames: cookiesToSet.map(c => c.name) });
-
-  cookiesToSet.forEach(({ name, value, options }) => {
-    response.cookies.set(name, value, options as Parameters<typeof response.cookies.set>[2]);
+  // Return tokens — client uses supabase.setSession() to write the auth cookie
+  return NextResponse.json({
+    ok: true,
+    role,
+    access_token: tokenData.access_token,
+    refresh_token: tokenData.refresh_token,
   });
-
-  return response;
 }

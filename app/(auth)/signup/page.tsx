@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { createClient } from "@/app/lib/supabase";
 
 type Role = "homeowner" | "partner";
 
@@ -41,7 +42,20 @@ export default function SignupPage() {
         return;
       }
 
-      // Server signed us in and set cookies — hard redirect to get fresh request
+      if (json.needsLogin) {
+        // Account created but auto-sign-in failed — redirect to login
+        window.location.href = "/login";
+        return;
+      }
+
+      // Set session client-side so @supabase/ssr writes the cookie in the
+      // exact format createServerClient (middleware + server pages) expects.
+      const supabase = createClient();
+      await supabase.auth.setSession({
+        access_token: json.access_token,
+        refresh_token: json.refresh_token,
+      });
+
       const dest = json.role === "partner" ? "/partner" : "/home";
       window.location.href = dest;
     } catch {

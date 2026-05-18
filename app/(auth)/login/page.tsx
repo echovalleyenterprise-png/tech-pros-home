@@ -5,6 +5,8 @@ export const dynamic = "force-dynamic";
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { createClient } from "@/app/lib/supabase";
+
 function LoginForm() {
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "/home";
@@ -33,6 +35,14 @@ function LoginForm() {
         setLoading(false);
         return;
       }
+
+      // Set session client-side so @supabase/ssr writes the cookie in the
+      // exact format createServerClient (middleware + server pages) expects.
+      const supabase = createClient();
+      await supabase.auth.setSession({
+        access_token: json.access_token,
+        refresh_token: json.refresh_token,
+      });
 
       const role = json.role as string | undefined;
       if (role === "partner") {
@@ -118,7 +128,7 @@ function LoginForm() {
               disabled={loading}
               className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold py-3 px-6 rounded-xl transition-colors duration-200"
             >
-              {loading ? "Signing in\u2026" : "Sign in"}
+              {loading ? "Signing in…" : "Sign in"}
             </button>
           </form>
 
