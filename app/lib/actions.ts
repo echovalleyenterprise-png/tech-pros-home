@@ -4,32 +4,39 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
 // ── Server-side Supabase client ────────────────────────────────────────────────
-// Signs in on the SERVER so cookies are written in the correct @supabase/ssr format
-// that middleware's createServerClient can read. Browser-client signInWithPassword()
-// writes a different cookie format that middleware can't reconstruct.
+// Provides BOTH the old API (get/set/remove, used by older @supabase/ssr installs)
+// and the new API (getAll/setAll, the official interface) so that cookie writing
+// works regardless of which version Vercel ends up installing.
 async function getServerSupabase() {
   const cookieStore = await cookies();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const cookieAdapter: any = {
+    // Old API (v0.0.x)
+    get(name: string) {
+      return cookieStore.get(name)?.value;
+    },
+    set(name: string, value: string, options: unknown) {
+      cookieStore.set(name, value, options as Parameters<typeof cookieStore.set>[2]);
+    },
+    remove(name: string, options: unknown) {
+      cookieStore.set(name, "", { ...(options as object), maxAge: 0 });
+    },
+    // New API (v0.1+)
+    getAll() {
+      return cookieStore.getAll();
+    },
+    setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
+      cookiesToSet.forEach(({ name, value, options }) =>
+        cookieStore.set(name, value, options as Parameters<typeof cookieStore.set>[2])
+      );
+    },
+  };
+
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(
-          cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]
-        ) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(
-              name,
-              value,
-              options as Parameters<typeof cookieStore.set>[2]
-            )
-          );
-        },
-      },
-    }
+    { cookies: cookieAdapter }
   );
 }
 
