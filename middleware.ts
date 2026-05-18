@@ -49,10 +49,28 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Pass user ID to Server Components via request header so they don't need
-  // to call getUser() again (Edge → serverless cookie forwarding is unreliable)
+  // Pass user ID to Server Components via REQUEST header (not response header).
+  // Next.js forwards request headers set here to Server Components via headers().
+  // This avoids re-calling getUser() in Server Components, which fails on Vercel
+  // because the Edge runtime (middleware) and serverless runtime (Server Components)
+  // don't share cookie state reliably.
   if (user) {
-    supabaseResponse.headers.set("x-user-id", user.id);
+    // Build new request headers with the user ID injected
+    const newRequestHeaders = new Headers(request.headers);
+    newRequestHeaders.set("x-user-id", user.id);
+
+    // Create a fresh response forwarding the new request headers to Server Components
+    const responseWithUserId = NextResponse.next({
+      request: { headers: newRequestHeaders },
+    });
+
+    // Copy all Supabase session cookies from supabaseResponse into the new response
+    // so the browser's session is properly maintained
+    for (const cookie of supabaseResponse.cookies.getAll()) {
+      responseWithUserId.cookies.set(cookie);
+    }
+
+    return responseWithUserId;
   }
 
   return supabaseResponse;
