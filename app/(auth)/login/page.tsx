@@ -5,6 +5,7 @@ export const dynamic = "force-dynamic";
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { createClient } from "@/app/lib/supabase";
 
 function LoginForm() {
   const searchParams = useSearchParams();
@@ -35,7 +36,16 @@ function LoginForm() {
         return;
       }
 
-      // The API route sets the auth cookie via Set-Cookie headers — just navigate.
+      // Write the session cookie using the browser client — this is the format
+      // that @supabase/ssr middleware can read reliably.
+      if (json.access_token && json.refresh_token) {
+        const supabase = createClient();
+        await supabase.auth.setSession({
+          access_token: json.access_token,
+          refresh_token: json.refresh_token,
+        });
+      }
+
       const role = json.role as string | undefined;
       if (role === "partner") {
         window.location.href = "/partner";

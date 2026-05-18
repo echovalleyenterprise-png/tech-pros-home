@@ -1,4 +1,3 @@
-import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -7,9 +6,9 @@ export const dynamic = "force-dynamic";
  * POST /api/auth/login
  *
  * 1. Calls Supabase REST token endpoint to authenticate
- * 2. Uses createServerClient.setSession() to write the auth cookie via Set-Cookie headers
- *    — this is the exact format @supabase/ssr's middleware + server pages can read.
- * 3. Returns { ok: true, role } — client just navigates, no client-side setSession needed.
+ * 2. Looks up role from profiles table
+ * 3. Returns { ok: true, role, access_token, refresh_token } — client calls
+ *    createBrowserClient().auth.setSession() to write cookies in the correct format.
  */
 export async function POST(request: NextRequest) {
   let body: { email?: string; password?: string };
@@ -66,34 +65,11 @@ export async function POST(request: NextRequest) {
     }
   } catch { /* fall back to user_metadata role */ }
 
-  // Build response — @supabase/ssr will write the auth cookie via Set-Cookie
-  const response = NextResponse.json({ ok: true, role });
-
-  const supabase = createServerClient(supabaseUrl, anonKey, {
-    cookies: {
-      getAll() {
-        return request.cookies.getAll();
-      },
-      setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
-        cookiesToSet.forEach(({ name, value, options }) =>
-          response.cookies.set(
-            name,
-            value,
-            options as Parameters<typeof response.cookies.set>[2]
-          )
-        );
-      },
-    },
-  });
-
-  const { error: sessionError } = await supabase.auth.setSession({
+  // Return tokens — client will call createBrowserClient().auth.setSession()
+  return NextResponse.json({
+    ok: true,
+    role,
     access_token: tokenData.access_token,
     refresh_token: tokenData.refresh_token,
   });
-
-  if (sessionError) {
-    return NextResponse.json({ error: sessionError.message }, { status: 401 });
-  }
-
-  return response;
 }

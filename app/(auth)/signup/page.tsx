@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { createClient } from "@/app/lib/supabase";
 
 type Role = "homeowner" | "partner";
 
@@ -41,13 +42,16 @@ export default function SignupPage() {
         return;
       }
 
-      if (json.needsLogin) {
-        // Account created but auto-sign-in failed — redirect to login
-        window.location.href = "/login";
-        return;
+      // Write the session cookie using the browser client — this is the format
+      // that @supabase/ssr middleware can read reliably.
+      if (json.access_token && json.refresh_token) {
+        const supabase = createClient();
+        await supabase.auth.setSession({
+          access_token: json.access_token,
+          refresh_token: json.refresh_token,
+        });
       }
 
-      // The API route sets the auth cookie via Set-Cookie headers — just navigate.
       const dest = json.role === "partner" ? "/partner" : "/home";
       window.location.href = dest;
     } catch {

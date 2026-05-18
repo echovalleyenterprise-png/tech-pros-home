@@ -1,4 +1,3 @@
-import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -8,10 +7,10 @@ export const dynamic = "force-dynamic";
  *
  * 1. Creates user via Supabase Admin REST API (email_confirm: true — no email needed)
  * 2. Creates profile row
- * 3. Signs in via REST token endpoint
- * 4. Uses createServerClient.setSession() to write the auth cookie via Set-Cookie headers
- *    — this is the exact format @supabase/ssr's middleware + server pages can read.
- * 5. Returns { ok: true, role } — client just navigates, no client-side setSession needed.
+ * 3. Signs in via REST token endpoint to get tokens
+ * 4. Handles referral tracking
+ * 5. Returns { ok: true, role, access_token, refresh_token } — client calls
+ *    createBrowserClient().auth.setSession() to write cookies in the correct format.
  */
 export async function POST(request: NextRequest) {
   let body: {
@@ -136,35 +135,11 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // ── Step 5: Write auth cookie via @supabase/ssr Set-Cookie headers ────────
-  const response = NextResponse.json({ ok: true, role });
-
-  const supabase = createServerClient(supabaseUrl, anonKey, {
-    cookies: {
-      getAll() {
-        return request.cookies.getAll();
-      },
-      setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
-        cookiesToSet.forEach(({ name, value, options }) =>
-          response.cookies.set(
-            name,
-            value,
-            options as Parameters<typeof response.cookies.set>[2]
-          )
-        );
-      },
-    },
-  });
-
-  const { error: sessionError } = await supabase.auth.setSession({
+  // ── Step 5: Return tokens — client will call createBrowserClient().auth.setSession() ─
+  return NextResponse.json({
+    ok: true,
+    role,
     access_token: tokenData.access_token,
     refresh_token: tokenData.refresh_token,
   });
-
-  if (sessionError) {
-    // Session write failed — tell client to go to login manually
-    return NextResponse.json({ ok: true, role, needsLogin: true });
-  }
-
-  return response;
 }
