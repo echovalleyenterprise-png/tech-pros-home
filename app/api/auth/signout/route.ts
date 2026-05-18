@@ -4,21 +4,33 @@ import { createServerClient } from "@supabase/ssr";
 export async function POST(request: NextRequest) {
   const cookiesToSet: { name: string; value: string; options: Record<string, unknown> }[] = [];
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const cookieAdapter: any = {
+    // Old API (v0.0.x)
+    get(name: string) {
+      return request.cookies.get(name)?.value;
+    },
+    set(name: string, value: string, options: Record<string, unknown>) {
+      cookiesToSet.push({ name, value, options });
+    },
+    remove(name: string, options: Record<string, unknown>) {
+      cookiesToSet.push({ name, value: "", options: { ...options, maxAge: 0 } });
+    },
+    // New API (v0.1+)
+    getAll() {
+      return request.cookies.getAll();
+    },
+    setAll(items: { name: string; value: string; options?: Record<string, unknown> }[]) {
+      items.forEach((item) =>
+        cookiesToSet.push(item as { name: string; value: string; options: Record<string, unknown> })
+      );
+    },
+  };
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(items: { name: string; value: string; options?: Record<string, unknown> }[]) {
-          items.forEach((item) =>
-            cookiesToSet.push(item as { name: string; value: string; options: Record<string, unknown> })
-          );
-        },
-      },
-    }
+    { cookies: cookieAdapter }
   );
 
   await supabase.auth.signOut();
