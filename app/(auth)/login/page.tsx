@@ -5,8 +5,6 @@ export const dynamic = "force-dynamic";
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/app/lib/supabase";
-
 function LoginForm() {
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "/home";
@@ -22,21 +20,21 @@ function LoginForm() {
     setLoading(true);
 
     try {
-      // Sign in directly with the browser client — createBrowserClient sets
-      // cookies in the exact format that createServerClient (middleware) reads.
-      const supabase = createClient();
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
       });
 
-      if (signInError) {
-        setError(signInError.message || "Sign in failed. Check your email and password.");
+      const json = await res.json();
+
+      if (!res.ok) {
+        setError(json.error || "Sign in failed. Check your email and password.");
         setLoading(false);
         return;
       }
 
-      const role = data.user?.user_metadata?.role as string | undefined;
+      const role = json.role as string | undefined;
       if (role === "partner") {
         window.location.href = "/partner";
       } else {
