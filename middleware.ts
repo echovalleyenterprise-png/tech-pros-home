@@ -1,6 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 
+// Page routes — redirect unauthenticated users to /login
 const PROTECTED = ["/home", "/chat", "/partner", "/callback"];
+// API routes — return 401 JSON for unauthenticated requests, inject x-user-id if valid
+const API_PROTECTED = ["/api/chat", "/api/feedback", "/api/callback", "/api/partner/callbacks"];
 const AUTH_ONLY = ["/login", "/signup", "/verify-email"];
 
 // ── Manual auth verification ──────────────────────────────────────────────────
@@ -105,11 +108,23 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const isProtected = PROTECTED.some((p) => pathname.startsWith(p));
+  const isApiProtected = API_PROTECTED.some((p) => pathname.startsWith(p));
   const isAuthPage = AUTH_ONLY.some((p) => pathname.startsWith(p));
 
   // Skip auth check entirely for unrelated paths
-  if (!isProtected && !isAuthPage) {
+  if (!isProtected && !isApiProtected && !isAuthPage) {
     return NextResponse.next({ request });
+  }
+
+  // API routes: verify session and inject x-user-id, or return 401 JSON
+  if (isApiProtected) {
+    const user = await verifySession(request);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const newHeaders = new Headers(request.headers);
+    newHeaders.set("x-user-id", user.id);
+    return NextResponse.next({ request: { headers: newHeaders } });
   }
 
   const user = await verifySession(request);
