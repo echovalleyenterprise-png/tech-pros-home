@@ -26,6 +26,10 @@ const ICONS = {
   chart:   "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z",
   link:    "M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1",
   tv:      "M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z",
+  map:     "M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z M15 11a3 3 0 11-6 0 3 3 0 016 0z",
+  calendar:"M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z",
+  zap:     "M13 10V3L4 14h7v7l9-11h-7z",
+  ban:     "M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636",
 };
 
 // ── Logo ──────────────────────────────────────────────────────────────────────
@@ -53,7 +57,8 @@ function Nav() {
           <a href="#features" className="hover:text-blue-600 transition-colors">Features</a>
           <a href="#how-it-works" className="hover:text-blue-600 transition-colors">How it works</a>
           <a href="#pricing" className="hover:text-blue-600 transition-colors">Pricing</a>
-          <a href="#partners" className="hover:text-blue-600 transition-colors">For Installers</a>
+          <a href="#marketplace" className="hover:text-blue-600 transition-colors">Marketplace</a>
+          <a href="#for-companies" className="hover:text-blue-600 transition-colors">For Companies</a>
         </nav>
         <div className="flex items-center gap-3">
           <Link href="/login" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
@@ -91,7 +96,7 @@ function Hero() {
         {/* Subheadline */}
         <p className="text-xl text-gray-600 leading-relaxed mb-10 max-w-2xl mx-auto">
           Your AI tech helper — available 24/7, always patient, always in plain English.
-          Whether you just had a pro install or you're tackling it yourself, we've got you.
+          Free forever, or go ad-free with Pro.
         </p>
 
         {/* CTAs */}
@@ -100,14 +105,14 @@ function Hero() {
             href="/signup"
             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-blue-600 text-white font-bold text-lg px-8 py-4 rounded-2xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 hover:shadow-xl hover:shadow-blue-300 hover:-translate-y-0.5"
           >
-            Get started free
+            Start for free
             <Icon path={ICONS.arrow} className="w-5 h-5" />
           </Link>
           <a
-            href="#partners"
+            href="#for-companies"
             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white text-gray-700 font-semibold text-lg px-8 py-4 rounded-2xl border-2 border-gray-200 hover:border-blue-300 hover:text-blue-600 transition-all"
           >
-            I'm an installer
+            For installation companies
             <Icon path={ICONS.users} className="w-5 h-5" />
           </a>
         </div>
@@ -115,8 +120,8 @@ function Hero() {
         {/* Social proof strip */}
         <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-gray-500">
           {[
+            { icon: ICONS.check, text: "Free forever" },
             { icon: ICONS.check, text: "No credit card required" },
-            { icon: ICONS.check, text: "5 questions free" },
             { icon: ICONS.check, text: "Cancel anytime" },
           ].map(({ icon, text }) => (
             <div key={text} className="flex items-center gap-1.5">
@@ -343,7 +348,7 @@ function ForEveryone() {
                     <Icon key={i} path={ICONS.star} className="w-4 h-4 text-yellow-400 fill-yellow-400" />
                   ))}
                 </div>
-                <p className="text-gray-700 text-sm leading-relaxed mb-4 italic">"{quote}"</p>
+                <p className="text-gray-700 text-sm leading-relaxed mb-4 italic">&ldquo;{quote}&rdquo;</p>
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-lg">{emoji}</div>
                   <div>
@@ -422,63 +427,51 @@ function Pricing() {
       name: "Free",
       price: "$0",
       period: "forever",
-      desc: "Try it out, no strings attached",
+      desc: "Full access, supported by ads",
       features: [
-        "5 questions per month",
-        "Text questions",
+        "Unlimited questions",
+        "Photo analysis",
+        "YouTube video guides",
         "All major brands covered",
+        "24/7 availability",
+        "Ad-supported",
       ],
       cta: "Start free",
       ctaHref: "/signup",
       highlight: false,
     },
     {
-      name: "Home",
+      name: "Pro",
       price: "$9.99",
       period: "per month",
-      desc: "Unlimited help for your whole home",
+      desc: "Everything free, completely ad-free",
       features: [
-        "Unlimited questions",
-        "Photo analysis",
+        "Everything in Free",
+        "No ads — ever",
+        "Priority AI responses",
         "Voice support",
-        "YouTube video guides",
-        "24/7 availability",
-        "Priority responses",
+        "Early access to new features",
+        "Support us in building more",
       ],
-      cta: "Start free trial",
-      ctaHref: "/signup?plan=home",
+      cta: "Go ad-free",
+      ctaHref: "/signup?plan=pro",
       highlight: true,
-      badge: "Most popular",
-    },
-    {
-      name: "Family",
-      price: "$14.99",
-      period: "per month",
-      desc: "Share with up to 5 family members",
-      features: [
-        "Everything in Home",
-        "Up to 5 accounts",
-        "Shared conversation history",
-        "Great for gifting to parents",
-      ],
-      cta: "Start free trial",
-      ctaHref: "/signup?plan=family",
-      highlight: false,
+      badge: "Ad-free",
     },
   ];
 
   return (
     <section id="pricing" className="py-20 px-5 bg-gray-50">
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-3xl mx-auto">
         <div className="text-center mb-14">
           <h2 className="text-4xl font-bold text-gray-900 mb-4">Simple, honest pricing</h2>
-          <p className="text-xl text-gray-500">Start free. Upgrade when you're ready.</p>
+          <p className="text-xl text-gray-500">Free forever. Upgrade to remove ads and support our mission.</p>
         </div>
-        <div className="grid md:grid-cols-3 gap-6 items-start">
+        <div className="grid md:grid-cols-2 gap-6 items-start">
           {plans.map((plan) => (
             <div
               key={plan.name}
-              className={`rounded-2xl p-7 ${
+              className={`rounded-2xl p-8 ${
                 plan.highlight
                   ? "bg-blue-600 text-white shadow-xl shadow-blue-200 scale-105"
                   : "bg-white border border-gray-100 shadow-sm"
@@ -505,8 +498,12 @@ function Pricing() {
                 {plan.features.map((f) => (
                   <li key={f} className="flex items-start gap-2.5 text-sm">
                     <Icon
-                      path={ICONS.check}
-                      className={`w-4 h-4 flex-shrink-0 mt-0.5 ${plan.highlight ? "text-blue-200" : "text-green-500"}`}
+                      path={f === "Ad-supported" ? ICONS.ban : ICONS.check}
+                      className={`w-4 h-4 flex-shrink-0 mt-0.5 ${
+                        f === "Ad-supported"
+                          ? plan.highlight ? "text-blue-300" : "text-gray-400"
+                          : plan.highlight ? "text-blue-200" : "text-green-500"
+                      }`}
                     />
                     <span className={plan.highlight ? "text-blue-100" : "text-gray-600"}>{f}</span>
                   </li>
@@ -530,10 +527,106 @@ function Pricing() {
   );
 }
 
-// ── Partner / Installer section ───────────────────────────────────────────────
-function Partners() {
+// ── Service Marketplace ───────────────────────────────────────────────────────
+function Marketplace() {
   return (
-    <section id="partners" className="py-20 px-5 bg-white">
+    <section id="marketplace" className="py-20 px-5 bg-white">
+      <div className="max-w-5xl mx-auto">
+        <div className="text-center mb-14">
+          <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 text-sm font-semibold px-4 py-1.5 rounded-full mb-6">
+            🔧 Coming Soon — Service Marketplace
+          </div>
+          <h2 className="text-4xl font-bold text-gray-900 mb-4">
+            When AI isn&apos;t enough, find a local pro
+          </h2>
+          <p className="text-xl text-gray-500 max-w-2xl mx-auto">
+            Sometimes a job needs hands on it. Our marketplace connects you with
+            vetted local installation technicians — book directly through the app.
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-6 mb-12">
+          {[
+            {
+              icon: ICONS.map,
+              title: "Find local techs",
+              desc: "Browse verified installation professionals near you. Ratings, reviews, and specialties all in one place.",
+              color: "bg-blue-100 text-blue-600",
+            },
+            {
+              icon: ICONS.calendar,
+              title: "Book in seconds",
+              desc: "See real availability and book a time that works for you — no phone tag, no waiting for a callback.",
+              color: "bg-emerald-100 text-emerald-600",
+            },
+            {
+              icon: ICONS.shield,
+              title: "Vetted & insured",
+              desc: "Every tech in our marketplace is screened, insured, and backed by our satisfaction guarantee.",
+              color: "bg-purple-100 text-purple-600",
+            },
+          ].map((f) => (
+            <div key={f.title} className="bg-gray-50 rounded-2xl p-6 border border-gray-100">
+              <div className={`w-11 h-11 rounded-xl ${f.color} flex items-center justify-center mb-4`}>
+                <Icon path={f.icon} className="w-5 h-5" />
+              </div>
+              <h3 className="font-bold text-gray-900 mb-2">{f.title}</h3>
+              <p className="text-gray-500 text-sm leading-relaxed">{f.desc}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Mock booking card */}
+        <div className="max-w-lg mx-auto bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+          <div className="bg-emerald-600 px-6 py-4 flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
+              <Icon path={ICONS.map} className="w-4 h-4 text-white" />
+            </div>
+            <div className="text-white font-bold text-sm">Nearby Technicians</div>
+          </div>
+          <div className="p-5 space-y-3">
+            {[
+              { name: "Carlos M.", specialty: "TV & Home Theater", rating: "4.9", jobs: "312", badge: "Top Rated" },
+              { name: "Sarah K.", specialty: "Smart Home & Networking", rating: "4.8", jobs: "198", badge: "Fast Response" },
+              { name: "David L.", specialty: "Security Cameras & Doorbells", rating: "4.9", jobs: "241", badge: "" },
+            ].map((tech) => (
+              <div key={tech.name} className="flex items-center gap-4 p-3 rounded-xl border border-gray-100 hover:bg-gray-50 transition-colors">
+                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600 flex-shrink-0">
+                  {tech.name[0]}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-gray-900 text-sm">{tech.name}</span>
+                    {tech.badge && (
+                      <span className="text-xs bg-yellow-100 text-yellow-700 font-semibold px-2 py-0.5 rounded-full">
+                        {tech.badge}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-xs text-gray-500">{tech.specialty}</div>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <div className="text-sm font-bold text-gray-900">⭐ {tech.rating}</div>
+                  <div className="text-xs text-gray-400">{tech.jobs} jobs</div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="px-5 pb-5">
+            <button className="w-full bg-emerald-600 text-white font-bold py-3 rounded-xl text-sm opacity-70 cursor-not-allowed">
+              Coming Soon — Join the Waitlist
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ── For Installation Companies ─────────────────────────────────────────────────
+function ForCompanies() {
+  return (
+    <section id="for-companies" className="py-20 px-5 bg-gray-50">
       <div className="max-w-5xl mx-auto">
         <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-10 md:p-14 overflow-hidden relative">
           {/* Background decoration */}
@@ -543,22 +636,23 @@ function Partners() {
           <div className="relative grid md:grid-cols-2 gap-12 items-center">
             <div>
               <div className="inline-flex items-center gap-2 bg-blue-600/20 text-blue-400 text-sm font-semibold px-4 py-1.5 rounded-full mb-6">
-                🤝 Tech Pros Partner Program
+                🏢 For Installation Companies
               </div>
               <h2 className="text-4xl font-bold text-white leading-tight mb-5">
-                Are you an installation company?
+                Reduce callbacks.<br />Gain new customers.
               </h2>
               <p className="text-gray-300 leading-relaxed mb-8">
-                Join the Tech Pros Partner network. Reduce your callbacks and earn recurring monthly
-                income for every customer you refer — for as long as they stay subscribed.
+                Partner with Tech Pros Home to give your customers world-class AI support
+                after every install. Fewer callbacks means lower costs — and your company
+                gets discovered by new homeowners through our marketplace.
               </p>
               <div className="space-y-4 mb-8">
                 {[
-                  { icon: ICONS.phone, text: "Reduce callbacks — AI handles the common post-install questions" },
-                  { icon: ICONS.dollar, text: "Earn $4/month per referred customer, paid automatically" },
-                  { icon: ICONS.chart, text: "Dashboard showing referrals, earnings, and callback tickets" },
-                  { icon: ICONS.link, text: "Your own branded affiliate link — just share it after every install" },
-                  { icon: ICONS.shield, text: "Free to join, no monthly fees for partners" },
+                  { icon: ICONS.phone, text: "AI handles post-install questions so your techs focus on new jobs" },
+                  { icon: ICONS.zap, text: "Customers get instant answers — no waiting, no frustrated callbacks" },
+                  { icon: ICONS.map, text: "Get listed in our marketplace and reach new homeowners in your area" },
+                  { icon: ICONS.chart, text: "Dashboard shows customer activity, questions, and satisfaction" },
+                  { icon: ICONS.shield, text: "White-label option available — your brand, our AI" },
                 ].map(({ icon, text }) => (
                   <div key={text} className="flex items-start gap-3">
                     <div className="w-8 h-8 rounded-lg bg-blue-600/20 flex-shrink-0 flex items-center justify-center">
@@ -568,55 +662,48 @@ function Partners() {
                   </div>
                 ))}
               </div>
-              <Link
-                href="/partner"
+              <a
+                href="mailto:partners@techpros.app"
                 className="inline-flex items-center gap-2 bg-blue-600 text-white font-bold px-7 py-3.5 rounded-xl hover:bg-blue-500 transition-colors shadow-lg shadow-blue-900/50"
               >
-                Become a partner — it's free
+                Contact us about partnering
                 <Icon path={ICONS.arrow} className="w-4 h-4" />
-              </Link>
+              </a>
             </div>
 
-            {/* Earnings calculator visual */}
+            {/* Value metrics */}
             <div className="bg-gray-800/60 backdrop-blur rounded-2xl p-6 border border-gray-700">
               <div className="text-gray-400 text-sm font-semibold mb-5 uppercase tracking-wide">
-                💰 Estimate your earnings
+                📉 The callback problem
               </div>
               <div className="space-y-4">
                 {[
-                  { installs: "10 installs/month", customers: "10 customers", monthly: "$40/mo", annual: "$480/yr" },
-                  { installs: "25 installs/month", customers: "25 customers", monthly: "$100/mo", annual: "$1,200/yr", highlight: true },
-                  { installs: "50 installs/month", customers: "50 customers", monthly: "$200/mo", annual: "$2,400/yr" },
+                  { label: "Avg. callbacks per 10 installs", value: "2–3", sub: "industry average" },
+                  { label: "Cost per callback visit", value: "$75–150", sub: "labor + travel", highlight: true },
+                  { label: "Questions AI resolves instantly", value: "~80%", sub: "no tech dispatch needed" },
                 ].map((row) => (
                   <div
-                    key={row.installs}
+                    key={row.label}
                     className={`rounded-xl p-4 ${
                       row.highlight ? "bg-blue-600 text-white" : "bg-gray-700/50"
                     }`}
                   >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <div className={`text-sm font-semibold ${row.highlight ? "text-white" : "text-gray-300"}`}>
-                          {row.installs}
-                        </div>
-                        <div className={`text-xs mt-0.5 ${row.highlight ? "text-blue-200" : "text-gray-500"}`}>
-                          {row.customers} referred
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className={`text-xl font-bold ${row.highlight ? "text-white" : "text-white"}`}>
-                          {row.monthly}
-                        </div>
-                        <div className={`text-xs ${row.highlight ? "text-blue-200" : "text-gray-500"}`}>
-                          {row.annual} / year
-                        </div>
-                      </div>
+                    <div className={`text-xs mb-1 ${row.highlight ? "text-blue-200" : "text-gray-400"}`}>
+                      {row.label}
+                    </div>
+                    <div className="flex items-end justify-between">
+                      <span className={`text-2xl font-extrabold ${row.highlight ? "text-white" : "text-white"}`}>
+                        {row.value}
+                      </span>
+                      <span className={`text-xs ${row.highlight ? "text-blue-200" : "text-gray-500"}`}>
+                        {row.sub}
+                      </span>
                     </div>
                   </div>
                 ))}
               </div>
               <p className="text-gray-500 text-xs mt-4 text-center">
-                Based on $4/month per active subscriber. Passive, recurring income.
+                Partner pricing starts at a flat monthly fee — no commissions, no per-question charges.
               </p>
             </div>
           </div>
@@ -648,10 +735,10 @@ function FinalCTA() {
             <Icon path={ICONS.arrow} className="w-5 h-5" />
           </Link>
           <a
-            href="#partners"
+            href="#for-companies"
             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-blue-700 text-white font-semibold text-lg px-8 py-4 rounded-2xl border border-blue-500 hover:bg-blue-800 transition-all"
           >
-            Installer partner program
+            For installation companies
           </a>
         </div>
       </div>
@@ -689,13 +776,13 @@ function Footer() {
             </ul>
           </div>
 
-          {/* Partners */}
+          {/* Marketplace */}
           <div>
-            <div className="text-white font-semibold text-sm mb-3">For Installers</div>
+            <div className="text-white font-semibold text-sm mb-3">Marketplace</div>
             <ul className="space-y-2 text-sm">
-              <li><a href="#partners" className="hover:text-white transition-colors">Partner program</a></li>
-              <li><a href="/partner" className="hover:text-white transition-colors">Earn referral income</a></li>
-              <li><a href="/partner/dashboard" className="hover:text-white transition-colors">Partner dashboard</a></li>
+              <li><a href="#marketplace" className="hover:text-white transition-colors">Find a technician</a></li>
+              <li><a href="#for-companies" className="hover:text-white transition-colors">For companies</a></li>
+              <li><a href="mailto:partners@techpros.app" className="hover:text-white transition-colors">Partner with us</a></li>
             </ul>
           </div>
 
@@ -734,7 +821,8 @@ export default function HomePage() {
         <ForEveryone />
         <HowItWorks />
         <Pricing />
-        <Partners />
+        <Marketplace />
+        <ForCompanies />
         <FinalCTA />
       </main>
       <Footer />

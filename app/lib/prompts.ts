@@ -42,7 +42,7 @@ The people you're helping are everyday homeowners. Some are older adults who wan
 `;
 
 export const QUESTION_LIMITS = {
-  free: 5,
+  free: Infinity,
   home: Infinity,
   family: Infinity,
 } as const;

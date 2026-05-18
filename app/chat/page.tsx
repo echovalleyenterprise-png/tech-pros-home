@@ -260,7 +260,6 @@ function ChatContent() {
   const [input, setInput] = useState(prefillQ);
   const [loading, setLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
-  const [limitReached, setLimitReached] = useState(false);
   const [pendingImage, setPendingImage] = useState<{
     file: File;
     preview: string;
@@ -339,12 +338,6 @@ function ChatContent() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ messages: apiMessages, conversationId }),
         });
-
-        if (res.status === 429) {
-          setLimitReached(true);
-          setLoading(false);
-          return;
-        }
 
         if (!res.ok) throw new Error("Request failed");
 
@@ -462,7 +455,7 @@ function ChatContent() {
     }
   }
 
-  const canSend = (input.trim().length > 0 || pendingImage !== null) && !loading && !limitReached;
+  const canSend = (input.trim().length > 0 || pendingImage !== null) && !loading;
 
   return (
     <div className="flex flex-col h-screen bg-slate-50">
@@ -649,16 +642,6 @@ function ChatContent() {
             </div>
           )}
 
-          {/* Limit reached */}
-          {limitReached && (
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
-              <strong>You&apos;ve used all your free questions this month.</strong>{" "}
-              <Link href="/upgrade" className="underline font-medium">
-                Upgrade for unlimited help →
-              </Link>
-            </div>
-          )}
-
           <div ref={bottomRef} />
         </div>
       </div>
@@ -691,7 +674,7 @@ function ChatContent() {
             {/* Camera / image upload button */}
             <button
               onClick={() => fileInputRef.current?.click()}
-              disabled={loading || limitReached}
+              disabled={loading}
               className="w-11 h-11 flex-shrink-0 bg-slate-100 hover:bg-slate-200 disabled:opacity-40 text-slate-500 rounded-xl flex items-center justify-center transition-colors"
               title="Upload a photo"
             >
@@ -716,7 +699,7 @@ function ChatContent() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              disabled={loading || limitReached}
+              disabled={loading}
               rows={1}
               placeholder={pendingImage ? "Add a message (optional)…" : "Type your tech question…"}
               className="flex-1 resize-none px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-slate-800 placeholder-slate-400 text-sm max-h-32 overflow-y-auto"
